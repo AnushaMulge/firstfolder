@@ -1,0 +1,181 @@
+/* BLOOD BANK MANAGEMENT SYSTEM: */
+
+/* Creation of Tables */
+
+ create table blood(
+	bgtype varchar(20) primary key);
+
+ create table bloodbank(
+	bbid varchar(10) primary key,
+	bbname varchar(20));
+
+ create table hospital(
+	hid varchar(10) primary key,
+	hname varchar(20),
+	address varchar(20),
+	contact varchar(10),
+	bbid varchar(10),
+	foreign key(bbid) references bloodbank(bbid) on delete set null);
+
+ create table doctor(
+	did varchar(10) primary key,
+	dname varchar(20),
+	phno varchar(10),
+	hid varchar(10),
+      specialisation varchar(25),
+	foreign key (hid) references hospital(hid) on delete set null);
+
+ create table bb_availablity(
+	bgtype varchar(10),
+	bbid varchar(10),
+	availability int,
+	primary key(bgtype, bbid),
+	foreign key(bgtype) references blood(bgtype),
+	foreign key(bbid) references bloodbank(bbid));
+
+ create table donor(
+	doid varchar(10) primary key,
+	donorname varchar(20),
+	age int,
+	weight varchar(10),
+	check(weight > 50),
+	dphno varchar(10),
+	dobg varchar(10),
+	bbid varchar(10),
+	foreign key(bbid) references bloodbank(bbid) on delete set null);
+
+ create table patient(
+	pid varchar(10) primary key,
+	pname varchar(20),
+	age int,
+	gender varchar(5),
+	pphno varchar(10),
+	address varchar(20),
+	pbg varchar(10),
+	did varchar(10),
+	hid varchar(10),
+	foreign key (did) references doctor (did) on delete set null,
+	foreign key (hid) references hospital(hid) on delete set null);
+
+ alter table donor
+   modify donorname varchar(20) default null;
+
+/* Description of a Table */
+
+   desc patient;
+   desc donor;
+   desc bb_availablity;
+   desc blood;
+   desc bloodbank;
+   desc doctor;
+   desc hospital;
+
+/* Insertion of Values */
+
+    insert into blood values('0+');
+    insert into blood values('0-');
+    insert into blood values('A+');
+    insert into blood values('A-');
+    insert into blood values('B+');
+    insert into blood values('B-');
+    insert into blood values('AB+');
+    insert into blood values('AB+');
+
+    insert into bloodbank values('BB1','Victoria');
+    insert into bloodbank values('BB2','Lion');
+    insert into bloodbank values('BB3','BGS');
+
+    insert into bb_availablity values('AB+','BB1','4440');
+    insert into bb_availablity values('A+','BB1','5760');
+    insert into bb_availablity values('A-','BB1','7860');
+    insert into bb_availablity values('O+','BB1','3680');
+    insert into bb_availablity values('O-','BB1','2280');
+    insert into bb_availablity values('B+','BB1','2780');
+    insert into bb_availablity values('B-','BB1','3980');
+    insert into bb_availablity values('AB-','BB1','7640');
+    insert into bb_availablity values('B+','BB2','2900');
+    insert into bb_availablity values('O-','BB3','500');
+    insert into bb_availablity values('A-','BB2','5050');
+
+    insert into hospital values('H1','Victoria','Bangalore','6252121444','BB1');
+    insert into hospital values('H2','BGS','Bangalore','6468365735','BB2');
+    insert into hospital values('H3','Lotus','Hubli','5375297364','BB1');
+    insert into hospital values('H4','Ramaiah','Mangalore','5343745385','BB3');
+    insert into hospital values('H5','Sparse','Mysuru','4753797946','BB2');
+
+    insert into doctor values('D1','Udhay','3556643487','H2','Cardiologist');
+    insert into doctor values('D2','Akshara','7547534685','H5','Gynecologist');
+    insert into doctor values('D3','Vinay','5375873464','H3','Orthopedic');
+    insert into doctor values('D4','Vishwas','5353756527','H4','Neurologist');
+    insert into doctor values('D5','Chirag','5358570987','H1','Cardiologist');
+
+    insert into donor values('DO1','Keerthana','40','52','4357974537','AB+','BB1');
+    insert into donor values('DO2','Sowmya','20','59','5765893290','B+','BB2');
+    insert into donor values('DO3','Pallavi','38','68','4357832686','B+','BB2');
+    insert into donor values('DO4','Puneet','24','69','3568743567','O+','BB1');
+    insert into donor values('DO5','Praveen','32','72','4532665564','B+','BB1');
+
+    insert into patient values('P1','Akshay','21','M','4376983567','Bengaluru','O+','D5','H1');
+    insert into patient values('P2','Akash','34','M','5467586853','Bengaluru','A+','D5','H1');
+    insert into patient values('P3','Abhay','48','M','4735798635','Mangalore','AB-','D3','H4');
+    insert into patient values('P4','Sunil','27','M','4736580897','Mysuru','O-','D4','H5');
+    insert into patient values('P5','Sudha','17','F','4625788696','Hubli','B-','D2','H3');
+
+
+   /* Creation of a View */
+
+    create view v_bloodavailable as
+    (select availability, bgtype
+     from bloodbank);
+
+
+
+/* QUERIES: */
+
+/* 1) Write a query to retrieve patient details whose blood is available in the blood bank.*/
+
+     select * 
+	from patient
+	where pbg in(select p.pbg
+            	   from bb_availablity b, bloodbank bb, patient p, hospital h
+			   where p.hid = h.hid
+			   and h.bbid = bb.bbid
+                  and bb.bbid = b.bbid
+                  and p.pbg = b.bgtype);
+
+/* 2) Create an assertion to check if blood availability is less than 2000 units.*/
+  
+      create assertion bavailcondition 
+      check(not exists (select *
+		  from bb_availablity
+		  where availability > 2000));		  
+
+/* 3) Write a query to list the doctor details who treats more than one patient.*/
+
+      select d.dname,count(distinct hid)
+      from doctor d
+      where 1<(select count(*)
+      from patient p
+      where p.did=d.did);
+
+/* 4) Write a query to retrieve donor details whose age is above 20years.*/
+
+ 	 select doid, donorname, age
+	 from donor 
+	 where age>20;
+
+/* 5) Write a query to list the hospital where all blood types are available.*/ 
+
+      select hid, hname 
+      from hospital h
+      where h.bbid in (select ba.bbid
+      from bb_availablity ba, blood b, bloodbank bb 
+      where bb.bbid = ba.bbid
+      and ba.bgtype = b.bgtype
+      and ba.bbid not in(select bbid
+    		from bb_availablity
+    		group by bbid
+   		having count(bbid) < (select count(bgtype)
+                                  from blood))); 
+
+ 
